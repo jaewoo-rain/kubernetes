@@ -137,8 +137,8 @@ cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 chown $(id -u):$(id -g) $HOME/.kube/config
 
 echo '======== [8-3] Pod Network 설치 (calico) ========'
-kubectl create -f https://raw.githubusercontent.com/jaewoo-rain/kubernetes/main/ground/k8s-1.27/calico-3.26.4/calico.yaml
-kubectl create -f https://raw.githubusercontent.com/jaewoo-rain/kubernetes/main/ground/k8s-1.27/calico-3.26.4/calico-custom.yaml
+kubectl create -f https://raw.githubusercontent.com/jaewoo-rain/kubernetes/main/k8s-1.27/calico-3.26.4/calico.yaml
+kubectl create -f https://raw.githubusercontent.com/jaewoo-rain/kubernetes/main/k8s-1.27/calico-3.26.4/calico-custom.yaml
 
 echo '======== [8-4] Master에 Pod를 생성 할수 있도록 설정 ========'
 kubectl taint nodes k8s-jaewoo node-role.kubernetes.io/control-plane-
@@ -151,8 +151,8 @@ echo 'alias k=kubectl' >>~/.bashrc
 echo 'complete -o default -F __start_kubectl k' >>~/.bashrc
 
 echo '======== [9-2] Dashboard 설치 ========'
-kubectl create -f https://raw.githubusercontent.com/jaewoo-rain/kubernetes/main/ground/k8s-1.27/dashboard-2.7.0/dashboard.yaml
+kubectl create -f https://raw.githubusercontent.com/jaewoo-rain/kubernetes/main/k8s-1.27/dashboard-2.7.0/dashboard.yaml
 
 echo '======== [9-3] Metrics Server 설치 ========'
-kubectl create -f https://raw.githubusercontent.com/jaewoo-rain/kubernetes/main/ground/k8s-1.27/metrics-server-0.6.3/metrics-server.yaml
+kubectl create -f https://raw.githubusercontent.com/jaewoo-rain/kubernetes/main/k8s-1.27/metrics-server-0.6.3/metrics-server.yaml
 SHELL
