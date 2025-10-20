@@ -1,0 +1,209 @@
+
+
+prometheusOperator:
+  image:
+    registry: quay.io
+    repository: prometheus-operator/prometheus-operator
+    tag: ""
+
+  resources:
+    requests:
+      cpu: 40m
+      memory: 96Mi
+    limits:
+      cpu: 80m
+      memory: 96Mi
+
+  nodeSelector: {}
+
+  prometheusConfigReloader:
+    image:
+      registry: quay.io
+      repository: prometheus-operator/prometheus-config-reloader
+      tag: ""
+
+    resources:
+      requests:
+        cpu: 20m
+        memory: 48Mi
+      limits:
+        cpu: 40m
+        memory: 48Mi
+
+prometheus:
+#  service:
+#    type: NodePort
+#    nodePort: 30090
+
+  prometheusSpec:
+    image:
+      registry: quay.io
+      repository: prometheus/prometheus
+      tag: v2.55.1
+
+    nodeSelector: {}
+
+    retention: 1d
+
+    replicas: 1
+
+    resources:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+      limits:
+        cpu: 400m
+        memory: 512Mi
+
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          #storageClassName: "storageClassName"
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 1Gi
+          selector:
+            matchLabels:
+              app.kubernetes.io/name: prometheus-volume
+
+    additionalScrapeConfigs:
+      - job_name: 'istiod'
+        kubernetes_sd_configs:
+          - role: endpoints
+            namespaces:
+              names:
+                - istio-system
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+            action: keep
+            regex: istiod;http-monitoring
+      - job_name: 'envoy-stats'
+        metrics_path: /stats/prometheus
+        kubernetes_sd_configs:
+          - role: pod
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_container_port_name]
+            action: keep
+            regex: '.*-envoy-prom'
+
+alertmanager:
+  alertmanagerSpec:
+    image:
+      registry: quay.io
+      repository: prometheus/alertmanager
+      tag: v0.27.0
+
+    replicas: 1
+    retention: 20h
+    storage: {}
+    nodeSelector: {}
+    resources:
+      requests:
+        cpu: 40m
+        memory: 128Mi
+      limits:
+        cpu: 80m
+        memory: 128Mi
+
+
+grafana:
+  defaultDashboardsTimezone: Asia/Seoul
+  adminUser: admin
+  adminPassword: admin
+
+  replicas: 1
+
+  image:
+    registry: docker.io
+    repository: grafana/grafana
+    tag: ""
+
+  testFramework:
+    enabled: false
+
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    hosts:
+      - grafana
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+  persistence:
+    type: pvc
+    enabled: true
+    accessModes:
+      - ReadWriteMany
+    size: 1Gi
+    existingClaim: grafana-pvc
+
+  sidecar:
+    image:
+      registry: quay.io
+      repository: kiwigrid/k8s-sidecar
+      tag: 1.28.0
+
+    resources:
+      requests:
+        cpu: 20m
+        memory: 256Mi
+      limits:
+        cpu: 40m
+        memory: 256Mi
+
+prometheus-node-exporter:
+  image:
+    registry: quay.io
+    repository: prometheus/node-exporter
+    tag: ""
+
+  resources:
+    requests:
+      cpu: 20m
+      memory: 128Mi
+    limits:
+      cpu: 40m
+      memory: 128Mi
+
+kube-state-metrics:
+  image:
+    registry: registry.k8s.io
+    repository: kube-state-metrics/kube-state-metrics
+
+  replicas: 1
+
+  resources:
+    requests:
+      cpu: 40m
+      memory: 98Mi
+    limits:
+      cpu: 90m
+      memory: 98Mi
+# Node의 라벨 정보를 메트릭에 포함
+#  metricLabelsAllowlist:
+#    - nodes=[*]
+#    - pods=[*]
+
+# 인증서 검증을 무시 하도록 설정
+#kubeApiServer:
+#  tlsConfig:
+#    insecureSkipVerify: true
+#kubeControllerManager:
+#  serviceMonitor:
+#    insecureSkipVerify: true
+#kubeEtcd:
+#  serviceMonitor:
+#    insecureSkipVerify: true
+#kubeScheduler:
+#  serviceMonitor:
+#    insecureSkipVerify: true
+#kubeProxy:
+#  serviceMonitor:
+#    insecureSkipVerify: true
