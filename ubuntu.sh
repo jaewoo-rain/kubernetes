@@ -59,7 +59,7 @@ echo \
   | sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
 
 sudo apt-get update -y
-sudo apt-get install -y containerd.io=${CTR_VERSION}
+sudo apt-get install -y --allow-downgrades containerd.io=${CTR_VERSION}
 
 echo "==> containerd systemd cgroup 설정"
 sudo mkdir -p /etc/containerd
