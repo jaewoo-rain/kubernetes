@@ -1,12 +1,11 @@
+
 #!/usr/bin/env bash
 set -euo pipefail
 
 # ===== [0] 기본 정보 =====
 POD_CIDR="20.96.0.0/12"
-MASTER_IP="$(hostname -I | awk '{print $1}')"   # 필요 시 고정 IP로 교체
-MASTER_HOST="k8s-master"                        # 원하면 변경
-K8S_VERSION="1.27.2-1.1"                        # Ubuntu용 패키지 버전 표기
-CTR_VERSION="1.6.21-1"                          # containerd.io(deb) 버전
+MASTER_IP="${MASTER_IP:-}" # 환경변수에서 읽기, 실행할 경우 MASTER_IP=192.168.0.123 bash ubuntu.sh
+MASTER_HOST="k8s-master"  # 원하면 변경
 
 echo "==> Master IP: ${MASTER_IP}"
 hostnamectl set-hostname "${MASTER_HOST}"
@@ -48,7 +47,7 @@ net.ipv4.ip_forward                 = 1
 EOF
 sudo sysctl --system
 
-# ===== [3] containerd 설치 (Docker repo 경유) =====
+# # ===== [3] containerd 설치 (Docker repo 경유) =====
 # echo "==> Docker repo 추가"
 # sudo install -m 0755 -d /etc/apt/keyrings
 # curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
@@ -59,7 +58,7 @@ sudo sysctl --system
 #   | sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
 
 # sudo apt-get update -y
-# sudo apt-get install -y --allow-downgrades containerd.io=${CTR_VERSION}
+# sudo apt-get install -y containerd.io=${CTR_VERSION}
 
 # echo "==> containerd systemd cgroup 설정"
 # sudo mkdir -p /etc/containerd
@@ -68,18 +67,30 @@ sudo sysctl --system
 # sudo systemctl daemon-reload
 # sudo systemctl enable --now containerd
 
-# ===== [4] Kubernetes 1.27 repo & 설치 =====
-echo "==> k8s apt repo 추가 (pkgs.k8s.io)"
-sudo mkdir -p /etc/apt/keyrings
-curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.27/deb/Release.key \
-  | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-1-27.gpg
+# ==(Docker가 이미 설치되어 있다면) cgroup 보정==
+echo "==> containerd SystemdCgroup 보정"
+if [ ! -f /etc/containerd/config.toml ]; then
+  sudo mkdir -p /etc/containerd
+  containerd config default | sudo tee /etc/containerd/config.toml >/dev/null
+fi
+sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml || true
+sudo systemctl restart containerd || true
 
-echo "deb [signed-by=/etc/apt/keyrings/kubernetes-1-27.gpg] \
-https://pkgs.k8s.io/core:/stable:/v1.27/deb/ /" \
-| sudo tee /etc/apt/sources.list.d/kubernetes-1-27.list >/dev/null
+# ===== [4] Kubernetes repo & 설치 (v1.28 권장) =====
+echo "==> k8s apt repo 추가 (pkgs.k8s.io / v1.28)"
+sudo mkdir -p /etc/apt/keyrings
+# 이전 키/리스트 잔재 제거(있어도/없어도 OK)
+sudo rm -f /etc/apt/sources.list.d/kubernetes*.list /etc/apt/keyrings/kubernetes-*.gpg || true
+
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key \
+  | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt.gpg
+
+echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /" \
+| sudo tee /etc/apt/sources.list.d/kubernetes.list >/dev/null
 
 sudo apt-get update -y
-sudo apt-get install -y kubelet=${K8S_VERSION} kubeadm=${K8S_VERSION} kubectl=${K8S_VERSION}
+# 버전 핀 없이 레포 내 최신 설치
+sudo apt-get install -y kubelet kubeadm kubectl
 sudo apt-mark hold kubelet kubeadm kubectl
 
 sudo systemctl enable --now kubelet
@@ -112,5 +123,5 @@ echo 'complete -o default -F __start_kubectl k' >> ~/.bashrc
 echo "==> iproute2/tc (경고 제거용)"
 sudo apt-get install -y iproute2
 
-echo "✅ Ubuntu 단일 노드 K8s 1.27 설치 완료!"
+echo "✅ Ubuntu 단일 노드 K8s 설치 완료!"
 kubectl get nodes -o wide
