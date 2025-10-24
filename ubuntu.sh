@@ -49,24 +49,24 @@ EOF
 sudo sysctl --system
 
 # ===== [3] containerd 설치 (Docker repo 경유) =====
-echo "==> Docker repo 추가"
-sudo install -m 0755 -d /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
-  | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
-  https://download.docker.com/linux/ubuntu $(. /etc/os-release; echo "$UBUNTU_CODENAME") stable" \
-  | sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
+# echo "==> Docker repo 추가"
+# sudo install -m 0755 -d /etc/apt/keyrings
+# curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
+#   | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+# echo \
+#   "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+#   https://download.docker.com/linux/ubuntu $(. /etc/os-release; echo "$UBUNTU_CODENAME") stable" \
+#   | sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
 
-sudo apt-get update -y
-sudo apt-get install -y --allow-downgrades containerd.io=${CTR_VERSION}
+# sudo apt-get update -y
+# sudo apt-get install -y --allow-downgrades containerd.io=${CTR_VERSION}
 
-echo "==> containerd systemd cgroup 설정"
-sudo mkdir -p /etc/containerd
-containerd config default | sudo tee /etc/containerd/config.toml >/dev/null
-sudo sed -i 's/ SystemdCgroup = false/ SystemdCgroup = true/' /etc/containerd/config.toml
-sudo systemctl daemon-reload
-sudo systemctl enable --now containerd
+# echo "==> containerd systemd cgroup 설정"
+# sudo mkdir -p /etc/containerd
+# containerd config default | sudo tee /etc/containerd/config.toml >/dev/null
+# sudo sed -i 's/ SystemdCgroup = false/ SystemdCgroup = true/' /etc/containerd/config.toml
+# sudo systemctl daemon-reload
+# sudo systemctl enable --now containerd
 
 # ===== [4] Kubernetes 1.27 repo & 설치 =====
 echo "==> k8s apt repo 추가 (pkgs.k8s.io)"
