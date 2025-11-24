@@ -119,6 +119,9 @@ if [ ! -f /etc/containerd/config.toml ]; then
   containerd config default | sudo tee /etc/containerd/config.toml >/dev/null
 fi
 
+# 🔥 여기 한 줄 추가 (CRI 플러그인 비활성화 되어 있으면 주석 처리)
+sudo sed -i 's/disabled_plugins = \["cri"\]/#disabled_plugins = \["cri"\]/' /etc/containerd/config.toml || true
+
 sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml || true
 
 sudo systemctl daemon-reload
