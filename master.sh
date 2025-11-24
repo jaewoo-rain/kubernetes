@@ -162,7 +162,7 @@ sudo chown "$(id -u)":"$(id -g)" "$HOME/.kube/config"
 
 # ===== [7] Calico 설치 (공식 매니페스트 사용) =====
 echo "==> Calico CNI 설치"
-kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.26.4/manifests/tigera-operator.yaml
+kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.26.4/manifests/tigera-operator.yaml
 kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.26.4/manifests/custom-resources.yaml
 
 # ===== [8] Master 스케줄링 설정 (옵션) =====
