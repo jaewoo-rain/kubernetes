@@ -165,6 +165,9 @@ echo "==> Calico CNI 설치"
 kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.26.4/manifests/tigera-operator.yaml
 kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.26.4/manifests/custom-resources.yaml
 
+# 자동으로 POD_CIDR 맞춤
+kubectl patch ippool default-ipv4-ippool --type='merge' -p "{\"spec\": {\"cidr\": \"${POD_CIDR}\"}}"
+
 # ===== [8] Master 스케줄링 설정 (옵션) =====
 if [[ "${ALLOW_SCHEDULE_ON_MASTER}" == "true" ]]; then
   echo "==> Master 노드에 워크로드 스케줄 허용 (taint 제거)"
