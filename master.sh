@@ -80,7 +80,36 @@ EOF
 
 sudo sysctl --system
 
-# ===== [3] containerd 설정 (이미 설치되어 있다고 가정) =====
+# ===== [3-A] containerd 설치 (없을 경우 자동 설치) =====
+echo "==> containerd 설치 여부 확인"
+if ! command -v containerd &>/dev/null; then
+  echo "==> containerd가 없어 자동 설치 진행"
+
+  sudo apt-get update -y
+
+  # Docker 공식 레포 추가
+  sudo install -m 0755 -d /etc/apt/keyrings
+  curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
+    | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+  sudo chmod a+r /etc/apt/keyrings/docker.gpg
+
+  # Ubuntu 버전 정보 로드
+  . /etc/os-release
+
+  echo \
+    "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+    https://download.docker.com/linux/ubuntu ${UBUNTU_CODENAME} stable" \
+    | sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
+
+  sudo apt-get update -y
+  sudo apt-get install -y containerd.io
+
+  echo "==> containerd 설치 완료"
+else
+  echo "==> containerd 이미 설치됨"
+fi
+
+# ===== [3-B] containerd SystemdCgroup 설정 보정 =====
 #  - Docker/Containerd가 이미 설치된 환경에서,
 #    K8s에 맞게 SystemdCgroup을 true로 맞춰주는 역할
 echo "==> containerd SystemdCgroup 설정 보정"
@@ -125,7 +154,7 @@ sudo kubeadm init \
 # ===== [6] admin kubeconfig 세팅 =====
 echo "==> admin kubeconfig 세팅 (~/.kube/config)"
 mkdir -p "$HOME/.kube"
-sudo cp -i /etc/kubernetes/admin.conf "$HOME/.kube/config"
+sudo cp /etc/kubernetes/admin.conf "$HOME/.kube/config"
 sudo chown "$(id -u)":"$(id -g)" "$HOME/.kube/config"
 
 # ===== [7] Calico 설치 (네 레포 사용) =====
@@ -155,4 +184,4 @@ echo "==> iproute2 설치 (tc 경고 제거용)"
 sudo apt-get install -y iproute2
 
 echo "✅ Ubuntu K8s Master 설치 완료!"
-kubectl get nodes -o wide
+kubectl get nodes -o wide || true
