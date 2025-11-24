@@ -12,7 +12,8 @@ set -euo pipefail
 #############################################
 
 # ===== [0] 기본 변수 =====
-POD_CIDR="${POD_CIDR:-10.244.0.0/16}"   # Calico/Pod 네트워크 CIDR
+POD_CIDR="${POD_CIDR:-20.96.0.0/12}"    # Calico/Pod 네트워크 CIDR
+# POD_CIDR="${POD_CIDR:-10.244.0.0/16}"   # Calico/Pod 네트워크 CIDR
 MASTER_IP="${MASTER_IP:-}"              # 반드시 외부에서 넣어줘야 하는 값
 MASTER_HOST="${MASTER_HOST:-k8s-master}"
 
@@ -162,11 +163,14 @@ sudo chown "$(id -u)":"$(id -g)" "$HOME/.kube/config"
 
 # ===== [7] Calico 설치 (공식 매니페스트 사용) =====
 echo "==> Calico CNI 설치"
-kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.26.4/manifests/tigera-operator.yaml
-kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.26.4/manifests/custom-resources.yaml
+# kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.26.4/manifests/tigera-operator.yaml
+# kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.26.4/manifests/custom-resources.yaml
+
+kubectl create -f https://raw.githubusercontent.com/jaewoo-rain/kubernetes/main/ground/k8s-1.27/calico-3.26.4/calico.yaml
+kubectl create -f https://raw.githubusercontent.com/jaewoo-rain/kubernetes/main/ground/k8s-1.27/calico-3.26.4/calico-custom.yaml
 
 # 자동으로 POD_CIDR 맞춤
-kubectl patch ippool default-ipv4-ippool --type='merge' -p "{\"spec\": {\"cidr\": \"${POD_CIDR}\"}}"
+# kubectl patch ippool default-ipv4-ippool --type='merge' -p "{\"spec\": {\"cidr\": \"${POD_CIDR}\"}}"
 
 # ===== [8] Master 스케줄링 설정 (옵션) =====
 if [[ "${ALLOW_SCHEDULE_ON_MASTER}" == "true" ]]; then
