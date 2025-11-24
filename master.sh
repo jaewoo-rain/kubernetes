@@ -12,7 +12,7 @@ set -euo pipefail
 #############################################
 
 # ===== [0] 기본 변수 =====
-POD_CIDR="${POD_CIDR:-20.96.0.0/12}"    # Calico/Pod 네트워크 CIDR
+POD_CIDR="${POD_CIDR:-10.244.0.0/16}"   # Calico/Pod 네트워크 CIDR
 MASTER_IP="${MASTER_IP:-}"              # 반드시 외부에서 넣어줘야 하는 값
 MASTER_HOST="${MASTER_HOST:-k8s-master}"
 
