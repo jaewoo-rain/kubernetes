@@ -181,7 +181,7 @@ else
 fi
 
 # ===== [9] 편의 기능 =====
-echo "==> kubectl bash 자동완성 및 alias 설정"
+echo '======== [9-1] kubectl 자동완성 기능 ========'
 if ! grep -q "__start_kubectl" ~/.bashrc 2>/dev/null; then
   {
     echo 'source <(kubectl completion bash)'
@@ -192,6 +192,12 @@ fi
 
 echo "==> iproute2 설치 (tc 경고 제거용)"
 sudo apt-get install -y iproute2
+
+echo '======== [9-2] Dashboard 설치 ========'
+kubectl create -f https://raw.githubusercontent.com/jaewoo-rain/kubernetes/main/ground/k8s-1.27/dashboard-2.7.0/dashboard.yaml
+
+echo '======== [9-3] Metrics Server 설치 ========'
+kubectl create -f https://raw.githubusercontent.com/jaewoo-rain/kubernetes/main/ground/k8s-1.27/metrics-server-0.6.3/metrics-server.yaml
 
 echo "✅ Ubuntu K8s Master 설치 완료!"
 kubectl get nodes -o wide || true
