@@ -137,5 +137,11 @@ echo 'complete -o default -F __start_kubectl k' >> ~/.bashrc
 echo "==> iproute2/tc (경고 제거용)"
 sudo apt-get install -y iproute2
 
+echo '======== [9-2] Dashboard 설치 ========'
+kubectl create -f https://raw.githubusercontent.com/jaewoo-rain/kubernetes/main/ground/k8s-1.27/dashboard-2.7.0/dashboard.yaml
+
+echo '======== [9-3] Metrics Server 설치 ========'
+kubectl create -f https://raw.githubusercontent.com/jaewoo-rain/kubernetes/main/ground/k8s-1.27/metrics-server-0.6.3/metrics-server.yaml
+
 echo "✅ Ubuntu 단일 노드 K8s 설치 완료!"
 kubectl get nodes -o wide
