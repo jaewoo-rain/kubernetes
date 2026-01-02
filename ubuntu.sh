@@ -122,8 +122,8 @@ sudo chown "$(id -u)":"$(id -g)" $HOME/.kube/config
 
 # ===== [6] Calico 설치 (너의 레포 사용) =====
 echo "==> Calico 설치"
-kubectl apply -f https://raw.githubusercontent.com/jaewoo-rain/kubernetes/main/ground/k8s-1.27/calico-3.26.4/calico.yaml
-kubectl apply -f https://raw.githubusercontent.com/jaewoo-rain/kubernetes/main/ground/k8s-1.27/calico-3.26.4/calico-custom.yaml
+kubectl create -f https://raw.githubusercontent.com/jaewoo-rain/kubernetes/main/ground/k8s-1.27/calico-3.26.4/calico.yaml
+kubectl create -f https://raw.githubusercontent.com/jaewoo-rain/kubernetes/main/ground/k8s-1.27/calico-3.26.4/calico-custom.yaml
 
 # ===== [7] master 스케줄 허용 (단일노드용) =====
 kubectl taint nodes --all node-role.kubernetes.io/control-plane- || true
