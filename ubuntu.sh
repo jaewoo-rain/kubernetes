@@ -4,11 +4,14 @@ set -euo pipefail
 
 # ===== [0] 기본 정보 =====
 POD_CIDR="20.96.0.0/12"
-MASTER_IP="${MASTER_IP:-}" # 환경변수에서 읽기, 실행할 경우 MASTER_IP=192.168.0.123 bash ubuntu.sh
 MASTER_HOST="k8s-master"  # 원하면 변경
 
-echo "==> Master IP: ${MASTER_IP}"
-hostnamectl set-hostname "${MASTER_HOST}"
+sudo hostnamectl set-hostname "${MASTER_HOST}"
+
+# (선택) hostname 해석 안정화용: 로컬에서 k8s-master가 127.0.0.1로 해석되게
+if ! grep -qE "^[[:space:]]*127\.0\.0\.1[[:space:]]+${MASTER_HOST}([[:space:]]|$)" /etc/hosts; then
+  echo "127.0.0.1 ${MASTER_HOST}" | sudo tee -a /etc/hosts >/dev/null
+fi
 
 # ===== [1] 기본 세팅 =====
 echo "==> 시간/타임존/필수 패키지"
@@ -24,11 +27,6 @@ echo "==> UFW(있다면) 비활성화"
 if systemctl is-enabled --quiet ufw; then
   sudo systemctl stop ufw || true
   sudo systemctl disable ufw || true
-fi
-
-echo "==> /etc/hosts 추가"
-if ! grep -q "${MASTER_IP} ${MASTER_HOST}" /etc/hosts; then
-  echo "${MASTER_IP} ${MASTER_HOST}" | sudo tee -a /etc/hosts
 fi
 
 # ===== [2] 커널 모듈/네트워킹 =====
@@ -67,6 +65,17 @@ sudo sysctl --system
 # sudo systemctl daemon-reload
 # sudo systemctl enable --now containerd
 
+# containerd가 실제로 설치/동작 중인지 확인 (없으면 kubeadm이 실패함)
+if ! command -v containerd >/dev/null 2>&1; then
+  echo "ERROR: containerd가 설치되어 있지 않습니다."
+  echo " - 해결1) containerd 설치 파트(주석) 해제해서 설치"
+  echo " - 해결2) 수동 설치 후 다시 실행"
+  exit 1
+fi
+sudo systemctl enable --now containerd || true
+sudo systemctl is-active --quiet containerd || { echo "ERROR: containerd 서비스가 실행 중이 아닙니다"; exit 1; }
+
+
 # ==(Docker가 이미 설치되어 있다면) cgroup 보정==
 echo "==> containerd SystemdCgroup 보정"
 if [ ! -f /etc/containerd/config.toml ]; then
@@ -74,7 +83,8 @@ if [ ! -f /etc/containerd/config.toml ]; then
   containerd config default | sudo tee /etc/containerd/config.toml >/dev/null
 fi
 sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml || true
-sudo systemctl restart containerd || true
+sudo systemctl restart containerd
+sudo systemctl is-active --quiet containerd || { echo "ERROR: containerd 재시작 후 비활성"; exit 1; }
 
 # ===== [4] Kubernetes repo & 설치 (v1.28 권장) =====
 echo "==> k8s apt repo 추가 (pkgs.k8s.io / v1.28)"
@@ -96,10 +106,14 @@ sudo apt-mark hold kubelet kubeadm kubectl
 sudo systemctl enable --now kubelet
 
 # ===== [5] kubeadm init =====
+# 기존 클러스터 흔적 확인
+sudo kubeadm reset -f || true
+sudo rm -rf /etc/cni/net.d /var/lib/cni /var/lib/kubelet /var/lib/etcd || true
+sudo systemctl restart containerd kubelet || true
+
 echo "==> kubeadm init"
 sudo kubeadm init \
-  --pod-network-cidr="${POD_CIDR}" \
-  --apiserver-advertise-address "${MASTER_IP}"
+  --pod-network-cidr="${POD_CIDR}"
 
 echo "==> admin kubeconfig 세팅"
 mkdir -p $HOME/.kube
@@ -112,7 +126,7 @@ kubectl apply -f https://raw.githubusercontent.com/jaewoo-rain/kubernetes/main/g
 kubectl apply -f https://raw.githubusercontent.com/jaewoo-rain/kubernetes/main/ground/k8s-1.27/calico-3.26.4/calico-custom.yaml
 
 # ===== [7] master 스케줄 허용 (단일노드용) =====
-kubectl taint nodes "${MASTER_HOST}" node-role.kubernetes.io/control-plane- || true
+kubectl taint nodes --all node-role.kubernetes.io/control-plane- || true
 
 # ===== [8] 품질/편의 =====
 echo "==> bash 자동완성"
